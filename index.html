@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Serial Number Generator</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generate Serial</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,79 +14,61 @@
     h1 {
       color: #2aa198;
     }
-    .serial-list {
-      margin-top: 20px;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-      text-align: left;
-      background: #eee8d5;
-      padding: 20px;
-      border-radius: 10px;
-      font-size: 1.1em;
+    #serialDisplay {
+      font-size: 2em;
+      margin-top: 30px;
+      color: #b58900;
     }
     button {
       padding: 10px 20px;
       font-size: 1em;
-      margin: 10px;
+      margin-top: 30px;
       cursor: pointer;
       border: none;
       background-color: #2aa198;
       color: white;
       border-radius: 8px;
     }
-    button:hover {
-      background-color: #268986;
-    }
-    textarea {
-      width: 100%;
-      height: 200px;
-      margin-top: 20px;
-      font-size: 1em;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      resize: none;
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-  <h1>Sequential Serial Number Generator</h1>
-  <button onclick="generateSerial()">Generate Serial</button>
-  <button onclick="downloadList()">Download List</button>
-  <button onclick="clearList()">Clear List</button>
-
-  <div class="serial-list">
-    <strong>Generated Serials:</strong>
-    <textarea id="serialList" readonly></textarea>
-  </div>
+  <h1>Your Serial Number</h1>
+  <button id="generateBtn" onclick="generateSerial()">Generate Serial</button>
+  <div id="serialDisplay"></div>
 
   <script>
-    let counter = 1;
-    const listEl = document.getElementById("serialList");
+    let used = false;
+    const endpoint = "https://script.google.com/macros/s/AKfycbygJEzBefc2cv3m3HiADfVlnESWQuFqNLK4MzKtWN_ZNjWaWrPz_wjtNj2beq3v4pCp/exec";
 
     function formatSerial(num) {
       return `SN-${String(num).padStart(5, '0')}`;
     }
 
     function generateSerial() {
-      const serial = formatSerial(counter++);
-      listEl.value += serial + "\n";
-    }
+      if (used) return;
 
-    function downloadList() {
-      const blob = new Blob([listEl.value], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'serial_numbers.txt';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+      const num = Math.floor(Math.random() * 100000) + 1;
+      const serial = formatSerial(num);
 
-    function clearList() {
-      listEl.value = "";
-      counter = 1;
+      document.getElementById("serialDisplay").textContent = serial;
+      document.getElementById("generateBtn").disabled = true;
+      used = true;
+
+      // Send serial to Google Apps Script
+      fetch(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ serial }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.text())
+      .then(data => console.log("Server response:", data))
+      .catch(err => console.error("Error:", err));
     }
   </script>
 </body>
