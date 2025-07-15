@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Generate Serial</title>
+  <title>Serial Generator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -31,7 +31,6 @@
     }
     button:disabled {
       background-color: #ccc;
-      cursor: not-allowed;
     }
   </style>
 </head>
@@ -41,34 +40,52 @@
   <div id="serialDisplay"></div>
 
   <script>
-    let used = false;
-    const endpoint = "https://script.google.com/macros/s/AKfycbygJEzBefc2cv3m3HiADfVlnESWQuFqNLK4MzKtWN_ZNjWaWrPz_wjtNj2beq3v4pCp/exec";
+    const endpoint = "https://script.google.com/macros/s/AKfycbygJEzBefc2cv3m3HiADfVlnESWQuFqNLK4MzKtWN_ZNjWaWrPz_wjtNj2beq3v4pCp/exec"; // Replace with your Apps Script URL
+    let allSerials = JSON.parse(localStorage.getItem("allSerials") || "[]");
+    let assignedSerial = localStorage.getItem("userSerial");
 
     function formatSerial(num) {
       return `SN-${String(num).padStart(5, '0')}`;
     }
 
-    function generateSerial() {
-      if (used) return;
-
-      const num = Math.floor(Math.random() * 100000) + 1;
-      const serial = formatSerial(num);
-
+    function showSerial(serial) {
       document.getElementById("serialDisplay").textContent = serial;
       document.getElementById("generateBtn").disabled = true;
-      used = true;
+    }
 
-      // Send serial to Google Apps Script
+    function generateSerial() {
+      if (assignedSerial) return;
+
+      const serialNumber = allSerials.length + 1;
+      assignedSerial = formatSerial(serialNumber);
+
+      allSerials.push(assignedSerial);
+      localStorage.setItem("userSerial", assignedSerial);
+      localStorage.setItem("allSerials", JSON.stringify(allSerials));
+
+      showSerial(assignedSerial);
+
+      if (allSerials.length % 5 === 0) {
+        sendToServer(allSerials);
+      }
+    }
+
+    function sendToServer(serials) {
       fetch(endpoint, {
         method: "POST",
-        body: JSON.stringify({ serial }),
+        body: JSON.stringify({ serials }),
         headers: {
           "Content-Type": "application/json"
         }
       })
       .then(res => res.text())
-      .then(data => console.log("Server response:", data))
-      .catch(err => console.error("Error:", err));
+      .then(data => console.log("Serial list sent to email:", data))
+      .catch(err => console.error("Failed to send serials:", err));
+    }
+
+    // On page load
+    if (assignedSerial) {
+      showSerial(assignedSerial);
     }
   </script>
 </body>
