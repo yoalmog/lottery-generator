@@ -40,13 +40,9 @@
   <div id="serialDisplay"></div>
 
   <script>
-    const endpoint = "https://script.google.com/macros/s/AKfycbygJEzBefc2cv3m3HiADfVlnESWQuFqNLK4MzKtWN_ZNjWaWrPz_wjtNj2beq3v4pCp/exec"; // Replace with your Apps Script URL
-    let allSerials = JSON.parse(localStorage.getItem("allSerials") || "[]");
+    const endpoint = "https://script.google.com/macros/s/AKfycbygJEzBefc2cv3m3HiADfVlnESWQuFqNLK4MzKtWN_ZNjWaWrPz_wjtNj2beq3v4pCp/exec";
+    let serials = JSON.parse(localStorage.getItem("allSerials") || "[]");
     let assignedSerial = localStorage.getItem("userSerial");
-
-    function formatSerial(num) {
-      return `SN-${String(num).padStart(5, '0')}`;
-    }
 
     function showSerial(serial) {
       document.getElementById("serialDisplay").textContent = serial;
@@ -56,31 +52,37 @@
     function generateSerial() {
       if (assignedSerial) return;
 
-      const serialNumber = allSerials.length + 1;
-      assignedSerial = formatSerial(serialNumber);
-
-      allSerials.push(assignedSerial);
-      localStorage.setItem("userSerial", assignedSerial);
-      localStorage.setItem("allSerials", JSON.stringify(allSerials));
-
-      showSerial(assignedSerial);
-
-      if (allSerials.length % 5 === 0) {
-        sendToServer(allSerials);
-      }
-    }
-
-    function sendToServer(serials) {
       fetch(endpoint, {
         method: "POST",
-        body: JSON.stringify({ serials }),
-        headers: {
-          "Content-Type": "application/json"
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "getSerial" })
+      })
+      .then(res => res.json())
+      .then(data => {
+        assignedSerial = data.serial;
+        serials.push(assignedSerial);
+
+        localStorage.setItem("userSerial", assignedSerial);
+        localStorage.setItem("allSerials", JSON.stringify(serials));
+
+        showSerial(assignedSerial);
+
+        if (serials.length % 5 === 0) {
+          sendListToServer(serials);
         }
       })
+      .catch(err => console.error("Error getting serial:", err));
+    }
+
+    function sendListToServer(serials) {
+      fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "sendList", serials })
+      })
       .then(res => res.text())
-      .then(data => console.log("Serial list sent to email:", data))
-      .catch(err => console.error("Failed to send serials:", err));
+      .then(data => console.log("Serial list sent:", data))
+      .catch(err => console.error("Error sending list:", err));
     }
 
     // On page load
